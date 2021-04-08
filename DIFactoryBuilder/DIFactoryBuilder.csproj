@@ -2,9 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>net5.0</TargetFrameworks>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
-	<ItemGroup >
+	<ItemGroup>
 		
 	</ItemGroup>
 

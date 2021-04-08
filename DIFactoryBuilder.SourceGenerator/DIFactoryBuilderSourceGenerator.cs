@@ -15,6 +15,11 @@ namespace DIFactoryBuilder.SourceGenerator
     [Generator]
     public class DIFactoryBuilderSourceGenerator : ISourceGenerator
     {
+        protected const string InjectAttributeName = @"DIFactoryBuilder.Attributes.InjectAttribute";
+        protected const string RequiresFactoryAttributeName = @"DIFactoryBuilder.Attributes.RequiresFactory";
+        protected const string IDIFactoryClassName = @"DIFactoryBuilder.IDIFactory";
+
+
         public void Initialize(GeneratorInitializationContext context)
         {
             context.RegisterForSyntaxNotifications(() => new FilterSyntaxTypeReceiver<ClassDeclarationSyntax>());

@@ -3,13 +3,9 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
 	  <LangVersion>preview</LangVersion>
+	  <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+	  <EnableNETAnalyzers>true</EnableNETAnalyzers>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="..\DIFactoryBuilder.Attributes\InjectAttribute.cs" Link="References\Attributes\InjectAttribute.cs" />
-    <Compile Include="..\DIFactoryBuilder.Attributes\RequiresFactoryAttribute.cs" Link="References\Attributes\RequiresFactoryAttribute.cs" />
-    <Compile Include="..\DIFactoryBuilder\IDIFactory.cs" Link="References\IDIFactory.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.9.0" />
@@ -17,7 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="References\Attributes\" />
+    <ProjectReference Include="..\DIFactoryBuilder.Attributes\DIFactoryBuilder.Attributes.csproj" />
+    <ProjectReference Include="..\DIFactoryBuilder\DIFactoryBuilder.csproj" />
   </ItemGroup>
 
 </Project>
