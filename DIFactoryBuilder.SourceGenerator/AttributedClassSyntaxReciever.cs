@@ -12,7 +12,7 @@ namespace DIFactoryBuilder.SourceGenerator
     public class AttributedClassSyntaxReciever : ISyntaxContextReceiver
     {
         private readonly string _attributeName;
-        public IList<ClassDeclarationSyntax> Classes { get; } = new List<ClassDeclarationSyntax>();
+        public IList<INamedTypeSymbol> Classes { get; } = new List<INamedTypeSymbol>();
 
         public AttributedClassSyntaxReciever(string attributeName)
         {
@@ -31,12 +31,19 @@ namespace DIFactoryBuilder.SourceGenerator
             if (context.Node is ClassDeclarationSyntax classDeclarationSyntax
                 && classDeclarationSyntax.AttributeLists.Count > 0)
             {
-                foreach (var attributeList in classDeclarationSyntax.AttributeLists)
-                {
+                var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax) as INamedTypeSymbol;
 
+                if (classSymbol is null)
+                {
+                    return;
                 }
 
-                classDeclarationSyntax.AttributeLists.Any(als => als.Attributes.Any(ad => ad.Class?.Equals(attribute, SymbolEqualityComparer.Default) == true));
+                if (classSymbol.GetAttributes().Any(att => att.AttributeClass?.Equals(attribute, SymbolEqualityComparer.Default) ?? false))
+                {
+                    this.Classes.Add(classSymbol);
+                }
+
+                return;
             }
         }
     }

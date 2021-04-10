@@ -1,5 +1,4 @@
-﻿using DIFactoryBuilder.Attributes;
-using DIFactoryBuilder.SourceGenerator.Extensions;
+﻿using DIFactoryBuilder.SourceGenerator.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
@@ -10,119 +9,227 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
+
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+
 namespace DIFactoryBuilder.SourceGenerator
 {
     [Generator]
     public class DIFactoryBuilderSourceGenerator : ISourceGenerator
     {
         protected const string InjectAttributeName = @"DIFactoryBuilder.Attributes.InjectAttribute";
-        protected const string RequiresFactoryAttributeName = @"DIFactoryBuilder.Attributes.RequiresFactory";
+        protected const string RequiresFactoryAttributeName = @"DIFactoryBuilder.Attributes.RequiresFactoryAttribute";
         protected const string IDIFactoryClassName = @"DIFactoryBuilder.IDIFactory";
 
 
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new FilterSyntaxTypeReceiver<ClassDeclarationSyntax>());
+            context.RegisterForSyntaxNotifications(() => new AttributedClassSyntaxReciever(RequiresFactoryAttributeName));
         }
 
         public void Execute(GeneratorExecutionContext context)
         {
-            if (context.SyntaxReceiver is FilterSyntaxTypeReceiver<ClassDeclarationSyntax> syntaxReceiver)
+            if (context.SyntaxContextReceiver is not AttributedClassSyntaxReciever syntaxReceiver)
             {
-                var requiresFactoryAttributeSymbol = context.Compilation.GetTypeByMetadataName(typeof(RequiresFactoryAttribute).FullName);
+                return;
+            }
 
-                foreach (var @class in syntaxReceiver.CandidateSyntaxes)
+            var requiresFactoryAttributeSymbol = context.Compilation.GetTypeByMetadataName(RequiresFactoryAttributeName);
+            var injectAttributeSymbol = context.Compilation.GetTypeByMetadataName(InjectAttributeName);
+            var iDiFactorySymbol = context.Compilation.GetTypeByMetadataName(IDIFactoryClassName);
+
+            foreach (var injectableClassSymbol in syntaxReceiver.Classes)
+            {
+                if (injectableClassSymbol.DeclaredAccessibility != Accessibility.Public)
                 {
-                    var model = context.Compilation.GetSemanticModel(@class.SyntaxTree, true);
-                    var classTypeSymbol = model.GetDeclaredSymbol(@class) as INamedTypeSymbol;
+                    continue;
+                }
 
-                    if (classTypeSymbol.DeclaredAccessibility != Accessibility.Public)
+                try
+                {
+                    var generatedClassName = $"{injectableClassSymbol.Name}Factory";
+                    var classSource = ProcessClass(injectableClassSymbol, generatedClassName, injectAttributeSymbol, iDiFactorySymbol);
+                    if (classSource is not null)
                     {
-                        continue;
+                        context.AddSource($"{generatedClassName}.cs", SourceText.From(classSource, Encoding.UTF8));
                     }
-
-                    if (classTypeSymbol?.HasAttribute(requiresFactoryAttributeSymbol) ?? false)
-                    {
-                        try
-                        {
-                            GenerateFactory(context, classTypeSymbol);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.WriteLine(e);
-                        }
-                        
-                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e);
                 }
             }
         }
 
-        public void GenerateFactory(GeneratorExecutionContext context, INamedTypeSymbol classTypeSymbol)
+        private static string? ProcessClass(INamedTypeSymbol classSymbol, string generatedClassName, INamedTypeSymbol injectAttributeSymbol, INamedTypeSymbol uDuFactoryClassSymbol)
         {
-            var injectAttributeSymbol = context.Compilation.GetTypeByMetadataName(typeof(InjectAttribute).FullName);
-
-            // Only get constructors that need injected parameters
-            var validConstructors = classTypeSymbol.Constructors
+            var validConstructors = classSymbol.Constructors
                 .Where(c => c.DeclaredAccessibility == Accessibility.Public)
                 .Where(c => c.Parameters.Any(p => p.HasAttribute(injectAttributeSymbol)))
                 .ToList();
 
-            if (validConstructors.Any())
+            if (!validConstructors.Any())
             {
-                var source = GenerateFactorySource(context, classTypeSymbol, validConstructors);
-                context.AddSource($"{classTypeSymbol.Name}_Factory", source);
+                // Class is valid but no public constructors contain an attributed parameter, no generated code is needed
+                return null;
             }
+
+            var syntaxFactory = SyntaxFactory.CompilationUnit()
+                .AddUsings(
+                    SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System")),
+                    SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("Microsoft.Extensions.DependencyInjection")))
+                .AddMembers(
+                    SyntaxFactory.NamespaceDeclaration(
+                        SyntaxFactory.ParseName(classSymbol.ContainingNamespace.ToDisplayString()))
+                        .AddMembers(
+                            SyntaxFactory.ClassDeclaration(generatedClassName)
+                                .AddModifiers(
+                                    SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                                .WithBaseList(
+                                    BaseList(
+                                        SingletonSeparatedList<BaseTypeSyntax>(
+                                            SimpleBaseType(
+                                                GenericName(
+                                                        Identifier("IDIFactory"))
+                                                    .WithTypeArgumentList(
+                                                        TypeArgumentList(
+                                                            SingletonSeparatedList<TypeSyntax>(
+                                                                IdentifierName(classSymbol.Name))))))))
+                                .AddMembers(
+                                    SyntaxFactory.FieldDeclaration(
+                                        SyntaxFactory.VariableDeclaration(
+                                            SyntaxFactory.ParseTypeName("System.IServiceProvider"))
+                                            .AddVariables(
+                                                SyntaxFactory.VariableDeclarator("_serviceProvider")))
+                                        .AddModifiers(
+                                            SyntaxFactory.Token(SyntaxKind.PrivateKeyword),
+                                            SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword)
+                                            )
+                                    )
+                                .AddMembers(
+                                    SyntaxFactory.ConstructorDeclaration(generatedClassName)
+                                        .AddModifiers(
+                                            SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                                        .AddParameterListParameters(
+                                            SyntaxFactory.Parameter(
+                                                SyntaxFactory.Identifier("serviceProvider"))
+                                                .WithType(
+                                                    SyntaxFactory.ParseTypeName("System.IServiceProvider"))
+                                            )
+                                        .AddBodyStatements(
+                                            SyntaxFactory.ParseStatement(@"this._serviceProvider = serviceProvider;")
+                                            )
+                                        )
+                                        .AddMembers(
+                                            GenerateFactoryMethods(validConstructors, classSymbol, injectAttributeSymbol))
+                                    )
+                                );
+
+            var classString = syntaxFactory.NormalizeWhitespace().ToFullString();
+            return classString;
         }
 
-        private string GenerateFactorySource(GeneratorExecutionContext context, INamedTypeSymbol classSymbol, IEnumerable<IMethodSymbol> constructors)
+        private static MemberDeclarationSyntax[] GenerateFactoryMethods(List<IMethodSymbol> validConstructors, INamedTypeSymbol classSymbol, INamedTypeSymbol injectAttributeSymbol)
         {
-            var useMicrosoftDiExtensions = context.Compilation.GetTypeByMetadataName("Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions") is not null;
-            // No support for generics due to difficulty
-            // var generics = GetGenericArguments(classSymbol);
+            var methods = new List<MethodDeclarationSyntax>();
 
-            var sb = new IndentStringBuilder();
-            if (useMicrosoftDiExtensions)
+            foreach (var validConstructor in validConstructors)
             {
-                sb.AppendLine("using Microsoft.Extensions.DependencyInjection;");
-                sb.AppendLine();
+                var method = GenerateFactoryMethod(validConstructor, classSymbol, injectAttributeSymbol);
+                methods.Add(method);
             }
 
-            sb.AppendLine($@"namespace {classSymbol.ContainingNamespace}");
-            sb.AppendLine($@"{{");
-            using (var _namespaceIndent = sb.IndentScope)
+            return methods.OfType<MemberDeclarationSyntax>().ToArray();
+        }
+
+        private static MethodDeclarationSyntax GenerateFactoryMethod(IMethodSymbol validConstructor, INamedTypeSymbol classSymbol, INamedTypeSymbol injectAttributeSymbol)
+        {
+            var methodDeclaration = SyntaxFactory.MethodDeclaration(
+                SyntaxFactory.ParseTypeName(classSymbol.Name),
+                "Create")
+                .AddModifiers(
+                    SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .WithParameterList(
+                                ParameterList(
+                                    SeparatedList<ParameterSyntax>(
+                                        new SyntaxNodeOrToken[]{
+                                            Parameter(
+                                                Identifier("a"))
+                                            .WithType(
+                                                PredefinedType(
+                                                    Token(SyntaxKind.IntKeyword))),
+                                            Token(SyntaxKind.CommaToken),
+                                            Parameter(
+                                                Identifier("b"))
+                                            .WithType(
+                                                PredefinedType(
+                                                    Token(SyntaxKind.IntKeyword)))
+                                            .WithDefault(
+                                                EqualsValueClause(
+                                                    LiteralExpression(
+                                                        SyntaxKind.NumericLiteralExpression,
+                                                        Literal(3)))),
+                                            Token(SyntaxKind.CommaToken),
+                                            Parameter(
+                                                Identifier("c"))
+                                            .WithType(
+                                                GenericName(
+                                                    Identifier("IEnumerable"))
+                                                .WithTypeArgumentList(
+                                                    TypeArgumentList(
+                                                        SingletonSeparatedList<TypeSyntax>(
+                                                            PredefinedType(
+                                                                Token(SyntaxKind.DoubleKeyword))))))})))
+                            .WithBody(
+                                Block(
+                                    SingletonList<StatementSyntax>(
+                                        ReturnStatement(
+                                            ObjectCreationExpression(
+                                                IdentifierName("TestViewModelFactory"))
+                                            .WithArgumentList(
+                                                ArgumentList(
+                                                    SeparatedList<ArgumentSyntax>(
+                                                        new SyntaxNodeOrToken[]{
+                                                            Argument(
+                                                                InvocationExpression(
+                                                                    MemberAccessExpression(
+                                                                        SyntaxKind.SimpleMemberAccessExpression,
+                                                                        MemberAccessExpression(
+                                                                            SyntaxKind.SimpleMemberAccessExpression,
+                                                                            ThisExpression(),
+                                                                            IdentifierName("_serviceProvider")),
+                                                                        GenericName(
+                                                                            Identifier("GetService"))
+                                                                        .WithTypeArgumentList(
+                                                                            TypeArgumentList(
+                                                                                SingletonSeparatedList<TypeSyntax>(
+                                                                                    IdentifierName("T1"))))))),
+                                                            Token(SyntaxKind.CommaToken),
+                                                            Argument(
+                                                                IdentifierName("a")),
+                                                            Token(SyntaxKind.CommaToken)})))))));
+
+
+            foreach (var parmeter in validConstructor.Parameters)
             {
-                sb.AppendLine($@"public partial class {classSymbol.Name}Factory : {(typeof(IDIFactory<>).Namespace)}.IDIFactory<{classSymbol.Name}>");
-                sb.AppendLine($@"{{");
-                using (var _classIndent = sb.IndentScope)
+                if (parmeter.HasAttribute(injectAttributeSymbol))
                 {
-                    sb.AppendLine("private readonly System.IServiceProvider _serviceProvider;");
-                    sb.AppendLine();
-
-                    sb.AppendLine($"public {classSymbol.Name}Factory(System.IServiceProvider serviceProvider)");
-                    sb.AppendLine("{");
-                    using (var _constructorIndent = sb.IndentScope)
-                    {
-                        sb.AppendLine("this._serviceProvider = serviceProvider;");
-                    }
-                    sb.AppendLine("}");
-                    sb.AppendLine();
-
-                    foreach (var constructor in constructors)
-                    {
-                        GenerateConstructorFactoryMethod(context, constructor, classSymbol, sb, useMicrosoftDiExtensions);
-                    }
-                    sb.AppendLine();
+                    
                 }
-                sb.AppendLine($@"}}");
-            }
-            sb.AppendLine($@"}}");
+                else
+                {
 
-            return sb.ToString();
+                }
+            }
+
+            return methodDeclaration;
         }
 
         private void GenerateConstructorFactoryMethod(GeneratorExecutionContext context, IMethodSymbol constructor, INamedTypeSymbol typeSymbol, IndentStringBuilder sb, bool useMicrosoftDi)
         {
-            var injectAttributeSymbol = context.Compilation.GetTypeByMetadataName(typeof(InjectAttribute).FullName);
+            var injectAttributeSymbol = context.Compilation.GetTypeByMetadataName(InjectAttributeName);
 
             // Generate method signature
             sb.Append($@"public {typeSymbol.Name} Create(");

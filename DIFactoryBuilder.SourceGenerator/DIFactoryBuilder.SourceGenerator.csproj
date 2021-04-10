@@ -13,8 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DIFactoryBuilder.Attributes\DIFactoryBuilder.Attributes.csproj" />
-    <ProjectReference Include="..\DIFactoryBuilder\DIFactoryBuilder.csproj" />
+    <Folder Include="Properties\" />
   </ItemGroup>
 
 </Project>

@@ -9,11 +9,11 @@ namespace DIFactoryBuilder.SourceGenerator.Extensions
 {
     public static class SymbolExtensions
     {
-        public static bool HasAttribute(this ISymbol typeSymbol, INamedTypeSymbol attributeSymbol)
+        public static bool HasAttribute(this IParameterSymbol typeSymbol, INamedTypeSymbol attributeSymbol)
         {
             foreach (var attribute in typeSymbol.GetAttributes())
             {
-                if (attribute.AttributeClass?.EqualsType(attributeSymbol) == true)
+                if (attribute.AttributeClass?.Equals(attributeSymbol) == true)
                 {
                     return true;
                 }
