@@ -17,6 +17,7 @@ namespace DIFactoryBuilder.Tests
         public readonly Assembly[] ExtraRequiredAssemblies = new[]
                                                         {
                                                             Assembly.GetAssembly(typeof(IDIFactory<>)),
+                                                            Assembly.GetAssembly(typeof(Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions)),
                                                         };
 
         public DIFactorySourceGeneratorTester()
