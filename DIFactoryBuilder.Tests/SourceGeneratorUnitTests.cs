@@ -50,14 +50,14 @@ namespace MyCode.TestNamespace
     public class TestViewModelFactory : DIFactoryBuilder.IDIFactory<TestViewModel>
     {
         private readonly System.IServiceProvider _serviceProvider;
-        public TestViewModel Create(int regularParam, System.Collections.Generic.ICollection<object> genericTypeParam, System.Collections.Generic.ICollection<System.Collections.Generic.IList<short>> genericTypeParam2, int paramWithDefault = 3)
-        {
-            return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), paramWithDefault);
-        }
-
         public TestViewModelFactory(System.IServiceProvider serviceProvider)
         {
             this._serviceProvider = serviceProvider;
+        }
+
+        public TestViewModel Create(int regularParam, System.Collections.Generic.ICollection<object> genericTypeParam, System.Collections.Generic.ICollection<System.Collections.Generic.IList<short>> genericTypeParam2, int paramWithDefault = 3)
+        {
+            return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), paramWithDefault);
         }
     }
 }

@@ -137,8 +137,8 @@ namespace DIFactoryBuilder.SourceGenerator
                     namespaceDeclaration
                         .AddMembers(
                             classDeclaration
-                            .AddMembers(factoryMethods)
-                            .AddMembers(constructorDeclaration)));
+                                .AddMembers(constructorDeclaration)
+                                .AddMembers(factoryMethods)));
             
             var classString = comilationUnit.NormalizeWhitespace().ToFullString();
             return classString;
