@@ -21,7 +21,7 @@ namespace DIFactoryBuilder.SourceGenerator
     {
         protected const string InjectAttributeName = @"DIFactoryBuilder.Attributes.InjectAttribute";
         protected const string RequiresFactoryAttributeName = @"DIFactoryBuilder.Attributes.RequiresFactoryAttribute";
-        protected const string IDIFactoryClassName = @"DIFactoryBuilder.IDIFactory";
+        protected const string IDIFactoryClassName = @"DIFactoryBuilder.IDIFactory`1";
 
         public void Initialize(GeneratorInitializationContext context)
         {
@@ -38,6 +38,11 @@ namespace DIFactoryBuilder.SourceGenerator
             var requiresFactoryAttributeSymbol = context.Compilation.GetTypeByMetadataName(RequiresFactoryAttributeName);
             var injectAttributeSymbol = context.Compilation.GetTypeByMetadataName(InjectAttributeName);
             var iDiFactorySymbol = context.Compilation.GetTypeByMetadataName(IDIFactoryClassName);
+
+            if (requiresFactoryAttributeSymbol is null || injectAttributeSymbol is null || iDiFactorySymbol is null)
+            {
+                return;
+            }
 
             foreach (var injectableClassSymbol in syntaxReceiver.Classes)
             {
@@ -95,9 +100,9 @@ namespace DIFactoryBuilder.SourceGenerator
                         SingletonSeparatedList<BaseTypeSyntax>(
                             SimpleBaseType(
                                 QualifiedName(
-                                    IdentifierName("DIFactoryBuilder"),
+                                    IdentifierName(uDuFactoryClassSymbol.ContainingNamespace.ToDisplayString()),
                                     GenericName(
-                                        Identifier("IDIFactory"))
+                                        Identifier(uDuFactoryClassSymbol.Name))
                                     .WithTypeArgumentList(
                                         TypeArgumentList(
                                             SingletonSeparatedList<TypeSyntax>(
@@ -173,7 +178,7 @@ namespace DIFactoryBuilder.SourceGenerator
                                     Identifier("GetService"))
                                 .WithTypeArgumentList(
                                     TypeArgumentList(
-                                        SingletonSeparatedList<TypeSyntax>(
+                                        SingletonSeparatedList(
                                             ParseTypeName(parmeter.Type.ToDisplayString())))))));
                     constructorArguments.Add(argument);
                 }
@@ -181,7 +186,7 @@ namespace DIFactoryBuilder.SourceGenerator
                 {
                     // If it does not have inject we need to pass it through the factory
                     // The following is the easiest way of copying the parameter syntax up to the factory
-                    var constructorParamSyntax = (parmeter.DeclaringSyntaxReferences.First().GetSyntax() as ParameterSyntax) ?? throw new Exception();
+                    var constructorParamSyntax = (parmeter.DeclaringSyntaxReferences.First().GetSyntax() as ParameterSyntax) ?? throw new InvalidOperationException();
 
                     var paramSyntax = Parameter(
                         constructorParamSyntax.Identifier)

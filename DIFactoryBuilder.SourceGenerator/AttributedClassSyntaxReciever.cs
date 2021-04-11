@@ -31,9 +31,7 @@ namespace DIFactoryBuilder.SourceGenerator
             if (context.Node is ClassDeclarationSyntax classDeclarationSyntax
                 && classDeclarationSyntax.AttributeLists.Count > 0)
             {
-                var classSymbol = context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax) as INamedTypeSymbol;
-
-                if (classSymbol is null)
+                if (context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax) is not INamedTypeSymbol classSymbol)
                 {
                     return;
                 }

@@ -5,6 +5,7 @@
 	  <LangVersion>preview</LangVersion>
 	  <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
 	  <EnableNETAnalyzers>true</EnableNETAnalyzers>
+      <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
