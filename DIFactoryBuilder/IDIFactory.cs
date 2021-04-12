@@ -16,8 +16,10 @@ namespace DIFactoryBuilder
     /// <summary>
     /// Interface IDIFactory
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public interface IDIFactory<T>
+    /// <typeparam name="T">
+    /// The type this factory creates.
+    /// </typeparam>
+    public class IDIFactory<T>
     {
         
     }
