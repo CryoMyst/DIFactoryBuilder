@@ -1,23 +1,35 @@
-using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
-
-using DIFactoryBuilder.SourceGenerator;
-
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Testing;
-using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
-
-using Xunit;
+// ***********************************************************************
+// Assembly         : DIFactoryBuilder.Tests
+// Author           : CryoM
+// Created          : 04-09-2021
+//
+// Last Modified By : CryoM
+// Last Modified On : 04-12-2021
+// ***********************************************************************
+// <copyright file="SourceGeneratorUnitTests.cs" company="DIFactoryBuilder.Tests">
+//     Copyright (c) . All rights reserved.
+// </copyright>
+// <summary></summary>
+// ***********************************************************************
 
 namespace DIFactoryBuilder.Tests
 {
+    using System.Threading.Tasks;
+
+    using DIFactoryBuilder.SourceGenerator;
+
+    using Microsoft.CodeAnalysis.Testing;
+
+    using Xunit;
+
+    /// <summary>
+    /// Class SourceGeneratorUnitTests.
+    /// </summary>
     public class SourceGeneratorUnitTests
     {
+        /// <summary>
+        /// Defines the test method TestSourceGeneratorOutput.
+        /// </summary>
         [Fact]
         public async Task TestSourceGeneratorOutput()
         {
@@ -50,14 +62,14 @@ namespace MyCode.TestNamespace
     public class TestViewModelFactory : DIFactoryBuilder.IDIFactory<TestViewModel>
     {
         private readonly System.IServiceProvider _serviceProvider;
-        public TestViewModel Create(int regularParam, System.Collections.Generic.ICollection<object> genericTypeParam, System.Collections.Generic.ICollection<System.Collections.Generic.IList<short>> genericTypeParam2, int paramWithDefault = 3)
-        {
-            return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), paramWithDefault);
-        }
-
         public TestViewModelFactory(System.IServiceProvider serviceProvider)
         {
             this._serviceProvider = serviceProvider;
+        }
+
+        public TestViewModel Create(int regularParam, System.Collections.Generic.ICollection<object> genericTypeParam, System.Collections.Generic.ICollection<System.Collections.Generic.IList<short>> genericTypeParam2, int paramWithDefault = 3)
+        {
+             return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), paramWithDefault);
         }
     }
 }
