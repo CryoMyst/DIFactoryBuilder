@@ -69,7 +69,7 @@ namespace MyCode.TestNamespace
 
         public TestViewModel Create(int regularParam, System.Collections.Generic.ICollection<object> genericTypeParam, System.Collections.Generic.ICollection<System.Collections.Generic.IList<short>> genericTypeParam2, int paramWithDefault = 3)
         {
-             return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), paramWithDefault);
+            return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), paramWithDefault);
         }
     }
 }
