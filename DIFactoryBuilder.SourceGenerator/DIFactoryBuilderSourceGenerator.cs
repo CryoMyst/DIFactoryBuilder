@@ -97,7 +97,12 @@ namespace DIFactoryBuilder.SourceGenerator
                     var generatedClassName = $"{injectableClassSymbol.Name}Factory";
                     var classSource = ProcessClass(injectableClassSymbol, generatedClassName, injectAttributeSymbol, iDiFactorySymbol);
 
-                    classSource = classSource?.Replace("\r\n", "\n");
+                    // Required for linux
+                    if (Environment.NewLine == "\n")
+                    {
+                        classSource = classSource?
+                            .Replace("\r\n", Environment.NewLine);
+                    }
 
                     if (classSource is not null)
                     {
