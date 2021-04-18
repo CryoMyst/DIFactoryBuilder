@@ -52,25 +52,7 @@ jobs:
         run: dotnet restore
         
       - name: publish DIFactoryBuilder on version change
-        id: publish_nuget_DIFactoryBuilder
-        uses: rohith/publish-nuget@v2
-        with:
-          PROJECT_FILE_PATH: DIFactoryBuilder/DIFactoryBuilder.csproj
-          PACKAGE_NAME: DIFactoryBuilder
-          TAG_COMMIT: true
-          TAG_FORMAT: v*
-          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
-          NUGET_SOURCE: https://api.nuget.org
-          INCLUDE_SYMBOLS: true
-
-      - name: publish DIFactoryBuilder.SourceGenerator on version change
-        id: publish_nuget_DIFactoryBuilder_SourceGenerator
-        uses: rohith/publish-nuget@v2
-        with:
-          PROJECT_FILE_PATH: DIFactoryBuilder.SourceGenerator/DIFactoryBuilder.SourceGenerator.csproj
-          PACKAGE_NAME: DIFactoryBuilder.SourceGenerator
-          TAG_COMMIT: true
-          TAG_FORMAT: v*
-          NUGET_KEY: ${{secrets.NUGET_API_KEY}}
-          NUGET_SOURCE: https://api.nuget.org
-          INCLUDE_SYMBOLS: true
+        id: publish_nuget
+        run: |
+          dotnet pack --configuration Release
+          dotnet nuget push **/*.nupkg --skip-duplicate --no-symbols false --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
