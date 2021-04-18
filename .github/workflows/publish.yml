@@ -52,7 +52,7 @@ jobs:
         run: dotnet restore
         
       - name: publish DIFactoryBuilder on version change
-        id: publish_nuget
+        id: publish_nuget_DIFactoryBuilder
         uses: rohith/publish-nuget@v2
         with:
           PROJECT_FILE_PATH: DIFactoryBuilder/DIFactoryBuilder.csproj
@@ -64,7 +64,7 @@ jobs:
           INCLUDE_SYMBOLS: true
 
       - name: publish DIFactoryBuilder.SourceGenerator on version change
-        id: publish_nuget
+        id: publish_nuget_DIFactoryBuilder.SourceGenerator
         uses: rohith/publish-nuget@v2
         with:
           PROJECT_FILE_PATH: DIFactoryBuilder.SourceGenerator/DIFactoryBuilder.SourceGenerator.csproj
