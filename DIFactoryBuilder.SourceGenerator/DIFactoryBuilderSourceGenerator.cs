@@ -96,6 +96,9 @@ namespace DIFactoryBuilder.SourceGenerator
                 {
                     var generatedClassName = $"{injectableClassSymbol.Name}Factory";
                     var classSource = ProcessClass(injectableClassSymbol, generatedClassName, injectAttributeSymbol, iDiFactorySymbol);
+
+                    classSource = classSource?.Replace("\r\n", "\n");
+
                     if (classSource is not null)
                     {
                         context.AddSource($"{generatedClassName}.cs", SourceText.From(classSource, Encoding.UTF8));
@@ -139,7 +142,7 @@ namespace DIFactoryBuilder.SourceGenerator
             var namespaceDeclaration = NamespaceDeclaration(
                         SyntaxFactory.ParseName(classSymbol.ContainingNamespace.ToDisplayString()));
 
-            // Create the factory class that inherits from 
+            // Create the factory class that inherits from
             var classDeclaration = SyntaxFactory.ClassDeclaration(generatedClassName)
                 .AddModifiers(
                     Token(SyntaxKind.PublicKeyword))
@@ -188,7 +191,7 @@ namespace DIFactoryBuilder.SourceGenerator
                             classDeclaration
                                 .AddMembers(constructorDeclaration)
                                 .AddMembers(factoryMethods)));
-            
+
             var classString = comilationUnit.NormalizeWhitespace().ToFullString();
             return classString;
         }
