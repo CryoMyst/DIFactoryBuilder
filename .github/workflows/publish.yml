@@ -50,7 +50,8 @@ jobs:
           dotnet-version: 5.0.x
       - name: Restore dependencies
         run: dotnet restore
-        
+      - name: Build
+        run: dotnet build --no-restore
       - name: publish DIFactoryBuilder on version change
         id: publish_nuget
         run: |
