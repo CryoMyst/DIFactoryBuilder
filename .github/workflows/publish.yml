@@ -64,7 +64,7 @@ jobs:
           INCLUDE_SYMBOLS: true
 
       - name: publish DIFactoryBuilder.SourceGenerator on version change
-        id: publish_nuget_DIFactoryBuilder.SourceGenerator
+        id: publish_nuget_DIFactoryBuilder_SourceGenerator
         uses: rohith/publish-nuget@v2
         with:
           PROJECT_FILE_PATH: DIFactoryBuilder.SourceGenerator/DIFactoryBuilder.SourceGenerator.csproj
