@@ -2,7 +2,18 @@
 
   <PropertyGroup>
     <TargetFrameworks>net5.0</TargetFrameworks>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>preview</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <LangVersion>preview</LangVersion>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>CryoMyst</Authors>
+    <Company>Codari</Company>
+    <Description>Required types for DIFactoyBuilder.SourceGenerator</Description>
+    <PackageProjectUrl>https://github.com/CryoMyst/DIFactoyBuilder</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/CryoMyst/DIFactoyBuilder</RepositoryUrl>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
