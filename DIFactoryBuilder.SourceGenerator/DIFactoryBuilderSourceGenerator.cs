@@ -97,13 +97,6 @@ namespace DIFactoryBuilder.SourceGenerator
                     var generatedClassName = $"{injectableClassSymbol.Name}Factory";
                     var classSource = ProcessClass(injectableClassSymbol, generatedClassName, injectAttributeSymbol, iDiFactorySymbol);
 
-                    // Required for linux
-                    if (Environment.NewLine == "\n")
-                    {
-                        classSource = classSource?
-                            .Replace("\r\n", Environment.NewLine);
-                    }
-
                     if (classSource is not null)
                     {
                         context.AddSource($"{generatedClassName}.cs", SourceText.From(classSource, Encoding.UTF8));
@@ -197,7 +190,7 @@ namespace DIFactoryBuilder.SourceGenerator
                                 .AddMembers(constructorDeclaration)
                                 .AddMembers(factoryMethods)));
 
-            var classString = comilationUnit.NormalizeWhitespace().ToFullString();
+            var classString = comilationUnit.NormalizeWhitespace(eol: Environment.NewLine).ToFullString();
             return classString;
         }
 
