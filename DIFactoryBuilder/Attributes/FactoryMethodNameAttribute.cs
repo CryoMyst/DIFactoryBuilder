@@ -4,9 +4,9 @@
 // Created          : 05-05-2021
 //
 // Last Modified By : CryoM
-// Last Modified On : 05-05-2021
+// Last Modified On : 05-06-2021
 // ***********************************************************************
-// <copyright file="FactoryMethodAttribute.cs" company="Codari">
+// <copyright file="FactoryMethodNameAttribute.cs" company="Codari">
 //     Copyright (c) . All rights reserved.
 // </copyright>
 // <summary></summary>
@@ -30,7 +30,7 @@ namespace DIFactoryBuilder.Attributes
         public string FactoryMethodName { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="FactoryMethodNameAttribute"/> class.
+        /// Initializes a new instance of the <see cref="FactoryMethodNameAttribute" /> class.
         /// </summary>
         /// <param name="factoryMethodName">Name of the factory method.</param>
         public FactoryMethodNameAttribute(string factoryMethodName)

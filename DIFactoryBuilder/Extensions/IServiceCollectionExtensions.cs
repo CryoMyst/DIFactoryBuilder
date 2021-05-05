@@ -27,6 +27,8 @@ namespace DIFactoryBuilder.Extensions
         /// <summary>
         /// Registers the factories.
         /// </summary>
+        /// <param name="serviceCollection">The service collection.</param>
+        /// <param name="assembly">The assembly.</param>
         /// <returns>IServiceCollection.</returns>
         public static IServiceCollection RegisterFactories(this IServiceCollection serviceCollection, Assembly assembly)
         {

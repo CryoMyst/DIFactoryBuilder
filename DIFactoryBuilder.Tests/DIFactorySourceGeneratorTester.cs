@@ -38,7 +38,7 @@ namespace DIFactoryBuilder.Tests
                                                         };
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DIFactorySourceGeneratorTester"/> class.
+        /// Initializes a new instance of the <see cref="DIFactorySourceGeneratorTester" /> class.
         /// </summary>
         public DIFactorySourceGeneratorTester()
         {

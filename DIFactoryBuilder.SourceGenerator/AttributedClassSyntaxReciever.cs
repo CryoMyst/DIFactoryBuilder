@@ -4,7 +4,7 @@
 // Created          : 04-09-2021
 //
 // Last Modified By : CryoM
-// Last Modified On : 04-12-2021
+// Last Modified On : 04-13-2021
 // ***********************************************************************
 // <copyright file="AttributedClassSyntaxReciever.cs" company="DIFactoryBuilder.SourceGenerator">
 //     Copyright (c) . All rights reserved.
