@@ -45,7 +45,7 @@ namespace MyCode.TestNamespace
     [RequiresFactory]
     public class TestViewModel
     {
-        public TestViewModel(int regularParam, ICollection<object> genericTypeParam, ICollection<IList<Int16>> genericTypeParam2, [Inject] IEnumerable<double> injectableParam, int paramWithDefault = 3)
+        public TestViewModel(int regularParam, ICollection<object> genericTypeParam, ICollection<IList<Int16>> genericTypeParam2, [Inject] IEnumerable<double> injectableParam, [RequiredInject] IEnumerable<long> requiredInjectableParam, int paramWithDefault = 3)
         {
             
         }
@@ -69,7 +69,7 @@ namespace MyCode.TestNamespace
 
         public TestViewModel Create(int regularParam, System.Collections.Generic.ICollection<object> genericTypeParam, System.Collections.Generic.ICollection<System.Collections.Generic.IList<short>> genericTypeParam2, int paramWithDefault = 3)
         {
-            return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), paramWithDefault);
+            return new TestViewModel(regularParam, genericTypeParam, genericTypeParam2, this._serviceProvider.GetService<System.Collections.Generic.IEnumerable<double>>(), this._serviceProvider.GetRequiredService<System.Collections.Generic.IEnumerable<long>>(), paramWithDefault);
         }
     }
 }

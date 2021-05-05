@@ -8,24 +8,29 @@
         <LangVersion>preview</LangVersion>
         <Nullable>enable</Nullable>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackOnBuild>true</PackOnBuild>
+        <DebugType>embedded</DebugType>
+        <DebugSymbols>true</DebugSymbols>
         <Authors>CryoMyst</Authors>
         <Company>Codari</Company>
         <Description>DIFactoyBuilder.SourceGenerator</Description>
         <PackageProjectUrl>https://github.com/CryoMyst/DIFactoyBuilder</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CryoMyst/DIFactoyBuilder</RepositoryUrl>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <IncludeBuildOutput>false</IncludeBuildOutput>
     </PropertyGroup>
 
 
     <ItemGroup>
-        <!-- Package the generator in the analyzer directory of the nuget package -->
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    </ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.9.0" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" PrivateAssets="all" />
 
-    <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="3.9.0" />
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.9.0" />
+        <!-- Package the generator in the analyzer directory of the nuget package -->
+        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" PrivateAssets="all" GeneratePathProperty="true"/>
+
+        <!-- Package additional references alongside-->
+        <None Include="$(PkgMicrosoft_CodeAnalysis_Common)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="true" />
+        <None Include="$(PkgMicrosoft_CodeAnalysis_CSharp)\lib\netstandard2.0\*.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="true" />
     </ItemGroup>
 
 </Project>
