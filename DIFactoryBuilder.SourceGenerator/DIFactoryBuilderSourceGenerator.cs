@@ -4,7 +4,7 @@
 // Created          : 04-09-2021
 //
 // Last Modified By : CryoM
-// Last Modified On : 04-12-2021
+// Last Modified On : 05-06-2021
 // ***********************************************************************
 // <copyright file="DIFactoryBuilderSourceGenerator.cs" company="DIFactoryBuilder.SourceGenerator">
 //     Copyright (c) . All rights reserved.
@@ -48,6 +48,10 @@ namespace DIFactoryBuilder.SourceGenerator
         /// </summary>
         protected const string RequiresFactoryAttributeName = @"DIFactoryBuilder.Attributes.RequiresFactoryAttribute";
         /// <summary>
+        /// The factory method name attribute name
+        /// </summary>
+        protected const string FactoryMethodNameAttributeName = @"DIFactoryBuilder.Attributes.FactoryMethodNameAttribute";
+        /// <summary>
         /// The idi factory class name
         /// </summary>
         protected const string IDIFactoryClassName = @"DIFactoryBuilder.IDIFactory`1";
@@ -84,11 +88,13 @@ namespace DIFactoryBuilder.SourceGenerator
             var injectAttributeSymbol = context.Compilation.GetTypeByMetadataName(InjectAttributeName);
             var requiredInjectAttributeSymbol = context.Compilation.GetTypeByMetadataName(RequiredInjectAttributeName);
             var iDiFactorySymbol = context.Compilation.GetTypeByMetadataName(IDIFactoryClassName);
+            var factoryMethodNameAttributeSymbol = context.Compilation.GetTypeByMetadataName(FactoryMethodNameAttributeName);
 
             if (requiresFactoryAttributeSymbol is null 
                 || injectAttributeSymbol is null
                 || requiredInjectAttributeSymbol is null
-                || iDiFactorySymbol is null)
+                || iDiFactorySymbol is null
+                || factoryMethodNameAttributeSymbol is null)
             {
                 return;
             }
@@ -103,7 +109,13 @@ namespace DIFactoryBuilder.SourceGenerator
                 try
                 {
                     var generatedClassName = $"{injectableClassSymbol.Name}Factory";
-                    var classSource = ProcessClass(injectableClassSymbol, generatedClassName, injectAttributeSymbol, requiredInjectAttributeSymbol, iDiFactorySymbol);
+                    var classSource = ProcessClass(
+                        injectableClassSymbol, 
+                        generatedClassName, 
+                        injectAttributeSymbol, 
+                        requiredInjectAttributeSymbol, 
+                        iDiFactorySymbol,
+                        factoryMethodNameAttributeSymbol);
 
                     if (classSource is not null)
                     {
@@ -123,9 +135,17 @@ namespace DIFactoryBuilder.SourceGenerator
         /// <param name="classSymbol">The class symbol.</param>
         /// <param name="generatedClassName">Name of the generated class.</param>
         /// <param name="injectAttributeSymbol">The inject attribute symbol.</param>
+        /// <param name="requiredInjectAttributeSymbol">The required inject attribute symbol.</param>
         /// <param name="iDiFactoryClassSymbol">The u du factory class symbol.</param>
+        /// <param name="factoryMethodNameAttributeSymbol">The factory method name attribute symbol.</param>
         /// <returns>System.Nullable&lt;System.String&gt;.</returns>
-        private static string? ProcessClass(INamedTypeSymbol classSymbol, string generatedClassName, INamedTypeSymbol injectAttributeSymbol, INamedTypeSymbol requiredInjectAttributeSymbol, INamedTypeSymbol iDiFactoryClassSymbol)
+        private static string? ProcessClass(
+            INamedTypeSymbol classSymbol, 
+            string generatedClassName, 
+            INamedTypeSymbol injectAttributeSymbol, 
+            INamedTypeSymbol requiredInjectAttributeSymbol, 
+            INamedTypeSymbol iDiFactoryClassSymbol,
+            INamedTypeSymbol factoryMethodNameAttributeSymbol)
         {
             var validConstructors = classSymbol.Constructors
                 .Where(c => c.DeclaredAccessibility == Accessibility.Public)
@@ -189,7 +209,12 @@ namespace DIFactoryBuilder.SourceGenerator
                 .AddBodyStatements(
                     ParseStatement(@"this._serviceProvider = serviceProvider;"));
 
-            var factoryMethods = GenerateFactoryMethods(validConstructors, classSymbol, injectAttributeSymbol, requiredInjectAttributeSymbol);
+            var factoryMethods = GenerateFactoryMethods(
+                validConstructors, 
+                classSymbol, 
+                injectAttributeSymbol, 
+                requiredInjectAttributeSymbol,
+                factoryMethodNameAttributeSymbol);
 
             comilationUnit = comilationUnit
                 .AddMembers(
@@ -209,14 +234,26 @@ namespace DIFactoryBuilder.SourceGenerator
         /// <param name="validConstructors">The valid constructors.</param>
         /// <param name="classSymbol">The class symbol.</param>
         /// <param name="injectAttributeSymbol">The inject attribute symbol.</param>
+        /// <param name="requiredInjectAttributeSymbol">The required inject attribute symbol.</param>
+        /// <param name="factoryMethodNameAttributeSymbol">The factory method name attribute symbol.</param>
         /// <returns>MemberDeclarationSyntax[].</returns>
-        private static MemberDeclarationSyntax[] GenerateFactoryMethods(List<IMethodSymbol> validConstructors, INamedTypeSymbol classSymbol, INamedTypeSymbol injectAttributeSymbol, INamedTypeSymbol requiredInjectAttributeSymbol)
+        private static MemberDeclarationSyntax[] GenerateFactoryMethods(
+            List<IMethodSymbol> validConstructors, 
+            INamedTypeSymbol classSymbol, 
+            INamedTypeSymbol injectAttributeSymbol, 
+            INamedTypeSymbol requiredInjectAttributeSymbol,
+            INamedTypeSymbol factoryMethodNameAttributeSymbol)
         {
-            var methods = new List<MethodDeclarationSyntax>();
+            var methods = new List<MethodDeclarationSyntax>(validConstructors.Count);
 
             foreach (var validConstructor in validConstructors)
             {
-                var method = GenerateFactoryMethod(validConstructor, classSymbol, injectAttributeSymbol, requiredInjectAttributeSymbol);
+                var method = GenerateFactoryMethod(
+                    validConstructor, 
+                    classSymbol, 
+                    injectAttributeSymbol, 
+                    requiredInjectAttributeSymbol,
+                    factoryMethodNameAttributeSymbol);
                 methods.Add(method);
             }
 
@@ -229,9 +266,16 @@ namespace DIFactoryBuilder.SourceGenerator
         /// <param name="validConstructor">The valid constructor.</param>
         /// <param name="classSymbol">The class symbol.</param>
         /// <param name="injectAttributeSymbol">The inject attribute symbol.</param>
+        /// <param name="requiredInjectAttributeSymbol">The required inject attribute symbol.</param>
+        /// <param name="factoryMethodNameAttributeSymbol">The factory method name attribute symbol.</param>
         /// <returns>MethodDeclarationSyntax.</returns>
         /// <exception cref="InvalidOperationException"></exception>
-        private static MethodDeclarationSyntax GenerateFactoryMethod(IMethodSymbol validConstructor, INamedTypeSymbol classSymbol, INamedTypeSymbol injectAttributeSymbol, INamedTypeSymbol requiredInjectAttributeSymbol)
+        private static MethodDeclarationSyntax GenerateFactoryMethod(
+            IMethodSymbol validConstructor, 
+            INamedTypeSymbol classSymbol, 
+            INamedTypeSymbol injectAttributeSymbol, 
+            INamedTypeSymbol requiredInjectAttributeSymbol,
+            INamedTypeSymbol factoryMethodNameAttributeSymbol)
         {
             var factoryMethodParameters = new List<ParameterSyntax>();
             var constructorArguments = new List<ArgumentSyntax>();
@@ -302,9 +346,14 @@ namespace DIFactoryBuilder.SourceGenerator
                     ParseTypeName(classSymbol.Name))
                 .AddArgumentListArguments(constructorArguments.ToArray()));
 
+            // Find a method name attached to this constructor using FactoryMethodNameAttribute else default it to Create
+            var methodName = validConstructor.GetAttribute(factoryMethodNameAttributeSymbol)
+                ?.ConstructorArguments.First().Value as string
+                ?? "Create";
+
             var methodDeclaration = MethodDeclaration(
                     ParseTypeName(classSymbol.Name),
-                    Identifier("Create"))
+                    Identifier(methodName))
                 .AddModifiers(
                     Token(SyntaxKind.PublicKeyword))
                 .AddParameterListParameters(factoryMethodParameters.ToArray())
