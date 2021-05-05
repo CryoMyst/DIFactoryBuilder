@@ -85,7 +85,10 @@ namespace DIFactoryBuilder.SourceGenerator
             var requiredInjectAttributeSymbol = context.Compilation.GetTypeByMetadataName(RequiredInjectAttributeName);
             var iDiFactorySymbol = context.Compilation.GetTypeByMetadataName(IDIFactoryClassName);
 
-            if (requiresFactoryAttributeSymbol is null || injectAttributeSymbol is null || iDiFactorySymbol is null)
+            if (requiresFactoryAttributeSymbol is null 
+                || injectAttributeSymbol is null
+                || requiredInjectAttributeSymbol is null
+                || iDiFactorySymbol is null)
             {
                 return;
             }
