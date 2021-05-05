@@ -129,7 +129,8 @@ namespace DIFactoryBuilder.SourceGenerator
         {
             var validConstructors = classSymbol.Constructors
                 .Where(c => c.DeclaredAccessibility == Accessibility.Public)
-                .Where(c => c.Parameters.Any(p => p.HasAttribute(injectAttributeSymbol)))
+                .Where(c => 
+                    c.Parameters.Any(p => p.HasAttribute(injectAttributeSymbol) || p.HasAttribute(requiredInjectAttributeSymbol)))
                 .ToList();
 
             if (!validConstructors.Any())
