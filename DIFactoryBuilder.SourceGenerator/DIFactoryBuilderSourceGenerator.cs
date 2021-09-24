@@ -125,6 +125,7 @@ namespace DIFactoryBuilder.SourceGenerator
                 catch (Exception e)
                 {
                     Debug.WriteLine(e);
+                    throw;
                 }
             }
         }
@@ -147,15 +148,36 @@ namespace DIFactoryBuilder.SourceGenerator
             INamedTypeSymbol iDiFactoryClassSymbol,
             INamedTypeSymbol factoryMethodNameAttributeSymbol)
         {
-            var validConstructors = classSymbol.Constructors
-                .Where(c => c.DeclaredAccessibility == Accessibility.Public)
-                .Where(c => 
-                    c.Parameters.Any(p => p.HasAttribute(injectAttributeSymbol) || p.HasAttribute(requiredInjectAttributeSymbol)))
+            // Valid properties with an Inject attribute
+            var validProperties = classSymbol.GetMembers()
+                .Where(m => m.DeclaredAccessibility == Accessibility.Public)
+                .Where(m => m.Kind == SymbolKind.Property)
+                .OfType<IPropertySymbol>()
+                .Where(p => p.SetMethod?.DeclaredAccessibility == Accessibility.Public) // With a public setter
+                .Where(m => m.HasAttribute(injectAttributeSymbol) || m.HasAttribute(requiredInjectAttributeSymbol))
                 .ToList();
 
-            if (!validConstructors.Any())
+            List<IMethodSymbol> validConstructors = null!;
+            if (validProperties.Any())
             {
-                // Class is valid but no public constructors contain an attributed parameter, no generated code is needed
+                // If ANY properties are injected then all constructors need factory methods
+                validConstructors = classSymbol.Constructors
+                    .Where(c => c.DeclaredAccessibility == Accessibility.Public)
+                    .ToList();
+            }
+            else
+            {
+                // Valid constructors that have attributes parameters
+                validConstructors = classSymbol.Constructors
+                    .Where(c => c.DeclaredAccessibility == Accessibility.Public)
+                    .Where(c => 
+                        c.Parameters.Any(p => p.HasAttribute(injectAttributeSymbol) || p.HasAttribute(requiredInjectAttributeSymbol)))
+                    .ToList();
+            }
+
+            if (!validConstructors.Any() && !validProperties.Any())
+            {
+                // Class is valid but no public constructors or parameters contain an attributed parameter, no generated code is needed
                 return null;
             }
 
@@ -211,6 +233,7 @@ namespace DIFactoryBuilder.SourceGenerator
 
             var factoryMethods = GenerateFactoryMethods(
                 validConstructors, 
+                validProperties,
                 classSymbol, 
                 injectAttributeSymbol, 
                 requiredInjectAttributeSymbol,
@@ -224,7 +247,7 @@ namespace DIFactoryBuilder.SourceGenerator
                                 .AddMembers(constructorDeclaration)
                                 .AddMembers(factoryMethods)));
 
-            var classString = comilationUnit.NormalizeWhitespace(eol: Environment.NewLine).ToFullString();
+            var classString = comilationUnit.NormalizeWhitespace().ToFullString();
             return classString;
         }
 
@@ -238,18 +261,24 @@ namespace DIFactoryBuilder.SourceGenerator
         /// <param name="factoryMethodNameAttributeSymbol">The factory method name attribute symbol.</param>
         /// <returns>MemberDeclarationSyntax[].</returns>
         private static MemberDeclarationSyntax[] GenerateFactoryMethods(
-            List<IMethodSymbol> validConstructors, 
+            List<IMethodSymbol> validConstructors,
+            List<IPropertySymbol> validProperties,
             INamedTypeSymbol classSymbol, 
             INamedTypeSymbol injectAttributeSymbol, 
             INamedTypeSymbol requiredInjectAttributeSymbol,
             INamedTypeSymbol factoryMethodNameAttributeSymbol)
         {
-            var methods = new List<MethodDeclarationSyntax>(validConstructors.Count);
+            var methodCount = validConstructors.Count
+                + (validProperties.Any() ? 0 : 1);
+            var methods = new List<MethodDeclarationSyntax>(methodCount);
 
+            // Constructor creation for each valid constructor
+            // Default constructor is used even if not defined in the class
             foreach (var validConstructor in validConstructors)
             {
                 var method = GenerateFactoryMethod(
-                    validConstructor, 
+                    validConstructor,
+                    validProperties,
                     classSymbol, 
                     injectAttributeSymbol, 
                     requiredInjectAttributeSymbol,
@@ -264,6 +293,7 @@ namespace DIFactoryBuilder.SourceGenerator
         /// Generates the factory method.
         /// </summary>
         /// <param name="validConstructor">The valid constructor.</param>
+        /// <param name="validProperties"></param>
         /// <param name="classSymbol">The class symbol.</param>
         /// <param name="injectAttributeSymbol">The inject attribute symbol.</param>
         /// <param name="requiredInjectAttributeSymbol">The required inject attribute symbol.</param>
@@ -271,7 +301,8 @@ namespace DIFactoryBuilder.SourceGenerator
         /// <returns>MethodDeclarationSyntax.</returns>
         /// <exception cref="InvalidOperationException"></exception>
         private static MethodDeclarationSyntax GenerateFactoryMethod(
-            IMethodSymbol validConstructor, 
+            IMethodSymbol validConstructor,
+            List<IPropertySymbol> validProperties,
             INamedTypeSymbol classSymbol, 
             INamedTypeSymbol injectAttributeSymbol, 
             INamedTypeSymbol requiredInjectAttributeSymbol,
@@ -279,10 +310,17 @@ namespace DIFactoryBuilder.SourceGenerator
         {
             var factoryMethodParameters = new List<ParameterSyntax>();
             var constructorArguments = new List<ArgumentSyntax>();
+            var propertySetters = new List<AssignmentExpressionSyntax>();
 
             foreach (var parmeter in validConstructor.Parameters)
             {
-                if (parmeter.HasAttribute(injectAttributeSymbol))
+                var diMethodToCall = parmeter.HasAttribute(requiredInjectAttributeSymbol)
+                    ? "GetRequiredService"
+                    : parmeter.HasAttribute(injectAttributeSymbol)
+                        ? "GetService"
+                        : null;
+
+                if (diMethodToCall is not null)
                 {
                     var argument = Argument(
                         InvocationExpression(
@@ -293,29 +331,11 @@ namespace DIFactoryBuilder.SourceGenerator
                                     ThisExpression(),
                                     IdentifierName("_serviceProvider")),
                                 GenericName(
-                                    Identifier("GetService"))
-                                .WithTypeArgumentList(
-                                    TypeArgumentList(
-                                        SingletonSeparatedList(
-                                            ParseTypeName(parmeter.Type.ToDisplayString())))))));
-                    constructorArguments.Add(argument);
-                }
-                else if (parmeter.HasAttribute(requiredInjectAttributeSymbol))
-                {
-                    var argument = Argument(
-                        InvocationExpression(
-                            MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                MemberAccessExpression(
-                                    SyntaxKind.SimpleMemberAccessExpression,
-                                    ThisExpression(),
-                                    IdentifierName("_serviceProvider")),
-                                GenericName(
-                                    Identifier("GetRequiredService"))
-                                .WithTypeArgumentList(
-                                    TypeArgumentList(
-                                        SingletonSeparatedList(
-                                            ParseTypeName(parmeter.Type.ToDisplayString())))))));
+                                        Identifier(diMethodToCall))
+                                    .WithTypeArgumentList(
+                                        TypeArgumentList(
+                                            SingletonSeparatedList(
+                                                ParseTypeName(parmeter.Type.ToDisplayString())))))));
                     constructorArguments.Add(argument);
                 }
                 else
@@ -341,10 +361,51 @@ namespace DIFactoryBuilder.SourceGenerator
                 }
             }
 
+            foreach (var property in validProperties)
+            {
+                var diMethodToCall = property.HasAttribute(requiredInjectAttributeSymbol)
+                    ? "GetRequiredService"
+                    : property.HasAttribute(injectAttributeSymbol)
+                        ? "GetService"
+                        : throw new InvalidOperationException("Valid property found without an injection attribute");
+                
+                var initializer = AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(property.Name),
+                    InvocationExpression(
+                        MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            MemberAccessExpression(
+                                SyntaxKind.SimpleMemberAccessExpression,
+                                ThisExpression(),
+                                IdentifierName("_serviceProvider")),
+                            GenericName(
+                                    Identifier(diMethodToCall))
+                                .WithTypeArgumentList(
+                                    TypeArgumentList(
+                                        SingletonSeparatedList(
+                                            ParseTypeName(property.Type.ToDisplayString())))))));
+                propertySetters.Add(initializer);
+            }
+
+            InitializerExpressionSyntax? propertyInitializer = null;
+            if (propertySetters.Any())
+            {
+                propertyInitializer = InitializerExpression(
+                    SyntaxKind.ObjectInitializerExpression,
+                    SeparatedList<ExpressionSyntax>(
+                        propertySetters
+                            .Select(x => (SyntaxNodeOrToken) x)
+                            .Intersperse<SyntaxNodeOrToken>(Token(SyntaxKind.CommaToken))
+                        )
+                );
+            }
+            
             var body = ReturnStatement(
                 ObjectCreationExpression(
                     ParseTypeName(classSymbol.Name))
-                .AddArgumentListArguments(constructorArguments.ToArray()));
+                .AddArgumentListArguments(constructorArguments.ToArray())
+                .WithInitializer(propertyInitializer));
 
             // Find a method name attached to this constructor using FactoryMethodNameAttribute else default it to Create
             var methodName = validConstructor.GetAttribute(factoryMethodNameAttributeSymbol)

@@ -276,5 +276,71 @@ namespace MyCode.TestNamespace
                 },
             }.RunAsync();
         }
+        
+        /// <summary>
+        /// Defines the test method TestInjectProperty.
+        /// </summary>
+        [Fact]
+        public async Task TestInjectProperty()
+        {
+            string codeFile = @"
+using System;
+using System.Runtime;
+using System.Collections.Generic;
+using System.Collections;
+using DIFactoryBuilder.Attributes;
+
+namespace MyCode.TestNamespace
+{
+    [RequiresFactory]
+    public class TestClass
+    {
+        [Inject] public object InjectableProperty { get; init; }
+        [RequiredInject] public object RequiredInjectableProperty { get; init; }
+
+        public TestClass(int regularParam, [Inject] object injectableParam)
+        {
+            
+        }
+    }
+}
+".Trim();
+
+            string expectedOutput = @"
+using System;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace MyCode.TestNamespace
+{
+    public class TestClassFactory : DIFactoryBuilder.IDIFactory<TestClass>
+    {
+        private readonly System.IServiceProvider _serviceProvider;
+        public TestClassFactory(System.IServiceProvider serviceProvider)
+        {
+            this._serviceProvider = serviceProvider;
+        }
+
+        public TestClass Create(int regularParam)
+        {
+            return new TestClass(regularParam, this._serviceProvider.GetService<object>())
+            {InjectableProperty = this._serviceProvider.GetService<object>(), RequiredInjectableProperty = this._serviceProvider.GetRequiredService<object>(), };
+        }
+    }
+}
+".Trim();
+
+            await new DIFactorySourceGeneratorTester()
+            {
+                ReferenceAssemblies = ReferenceAssemblies.Net.Net50,
+                TestState =
+                {
+                    Sources = { codeFile },
+                    GeneratedSources =
+                    {
+                        (typeof(DIFactoryBuilderSourceGenerator), "TestClassFactory.cs", expectedOutput),
+                    },
+                },
+            }.RunAsync();
+        }
     }
 }

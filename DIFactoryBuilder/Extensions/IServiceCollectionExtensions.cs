@@ -35,7 +35,7 @@ namespace DIFactoryBuilder.Extensions
             var possibleFactoryTypes = assembly.GetTypes()
                 .Where(t => t.IsClass)
                 .Where(t => t.BaseType is not null)
-                .Where(t => t.BaseType.IsGenericType && t.BaseType.GetGenericTypeDefinition() == typeof(IDIFactory<>));
+                .Where(t => t.BaseType!.IsGenericType && t.BaseType.GetGenericTypeDefinition() == typeof(IDIFactory<>));
 
             foreach (var factoryType in possibleFactoryTypes)
             {

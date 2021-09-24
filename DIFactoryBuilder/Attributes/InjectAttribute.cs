@@ -21,7 +21,7 @@ namespace DIFactoryBuilder.Attributes
     /// Implements the <see cref="System.Attribute" />
     /// </summary>
     /// <seealso cref="System.Attribute" />
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property)]
     public class InjectAttribute : Attribute
     {
         
