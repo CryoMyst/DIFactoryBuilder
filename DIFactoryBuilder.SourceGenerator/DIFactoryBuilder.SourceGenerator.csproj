@@ -16,7 +16,7 @@
         <Description>DIFactoyBuilder.SourceGenerator</Description>
         <PackageProjectUrl>https://github.com/CryoMyst/DIFactoyBuilder</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CryoMyst/DIFactoyBuilder</RepositoryUrl>
-        <Version>1.0.5</Version>
+        <Version>1.0.6</Version>
         <IncludeBuildOutput>false</IncludeBuildOutput>
     </PropertyGroup>
 
