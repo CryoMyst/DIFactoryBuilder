@@ -4,17 +4,9 @@ A library that will generate Microsoft.DependencyInjection compatible factories 
 
 # Installation
 
-Not avaliable on Nuget.
+[![latest version](https://img.shields.io/nuget/v/DIFactoryBuilder.SourceGenerator)](https://www.nuget.org/packages/DIFactoryBuilder.SourceGenerator)
 
-Add both the DIFactoryBuilder and DIFactoryBuilder.SourceGenerator to your project ensuring DIFactoryBuilder.SourceGenerator is set as an Analyzer
-
-example:
-```xml
-    <ProjectReference Include="DIFactoryBuilder.SourceGenerator.csproj" 
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false" />
-```
-
+IMPORTANT: Set output type as analyzer `OutputItemType="Analyzer"`
 # Useage
 
 Simply attribute your class with [RequiresFactory] and any parameter you wish to inject with [Inject]
