@@ -247,7 +247,7 @@ namespace DIFactoryBuilder.SourceGenerator
                                 .AddMembers(constructorDeclaration)
                                 .AddMembers(factoryMethods)));
 
-            var classString = comilationUnit.NormalizeWhitespace().ToFullString();
+            var classString = comilationUnit.NormalizeWhitespace(eol: Environment.NewLine).ToFullString();
             return classString;
         }
 
